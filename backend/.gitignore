@@ -1,0 +1,197 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production builds
+client/build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Uploads directory
+uploads/
+public/uploads/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# 🚀 How to Open the Trading Journal Website
+
+Here's how to get your Trading Journal Pro website up and running:
+
+##  Prerequisites
+Make sure you have installed:
+- **Node.js** (v16 or higher)
+- **MongoDB** (local or cloud database)
+- **npm** or **yarn** package manager
+
+##  Step-by-Step Setup
+
+### 1. **Install Dependencies**
+Open your terminal/command prompt in the project root directory and run:
+```bash
+npm run install-all
+```
+This will install dependencies for both frontend and backend.
+
+### 2. **Set Up Environment Variables**
+```bash
+cp env.example .env
+```
+Then edit the `.env` file with your configuration:
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/trading-journal
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+NODE_ENV=development
+```
+
+### 3. **Start MongoDB**
+If using local MongoDB:
+```bash
+# Windows
+net start MongoDB
+
+# macOS
+brew services start mongodb-community
+
+# Linux
+sudo systemctl start mongodb
+```
+
+### 4. **Launch the Application**
+```bash
+npm run dev
+```
+This command starts both the backend server and frontend development server simultaneously.
+
+### 5. **Access the Website**
+Open your web browser and go to:
+- **Frontend (Main App)**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+
+##  What You'll See
+
+1. **Login/Register Page** - Create your account or sign in
+2. **Dashboard** - Overview of your trading performance
+3. **Trade Log** - Add and manage your trades
+4. **Calendar** - Monthly performance view
+5. **News** - Economic news from ForexFactory
+6. **Analytics** - Detailed performance charts
+
+## 🔍 Troubleshooting
+
+### If the website doesn't open:
+
+1. **Check if servers are running**
+   - Backend should show: "Server running on port 5000"
+   - Frontend should show: "Local: http://localhost:3000"
+
+2. **Check MongoDB connection**
+   - Ensure MongoDB is running
+   - Verify connection string in `.env`
+
+3. **Check for errors**
+   - Look at terminal output for error messages
+   - Check browser console (F12) for frontend errors
+
+### Common Issues:
+
+- **Port already in use**: Change PORT in `.env` file
+- **MongoDB not connected**: Start MongoDB service
+- **Dependencies missing**: Run `npm run install-all` again
+
+## 🎉 Success!
+Once everything is running, you'll see the beautiful Trading Journal Pro interface where you can:
+- ✅ Log your trades with images
+- ✅ Track performance metrics
+- ✅ View analytics and charts
+- ✅ Monitor economic news
+- ✅ Analyze your trading patterns
+
+**Happy Trading! 📈💰**
