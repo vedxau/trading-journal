@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+.vscode
+.cache
+
+# Environment variables
+.env
+
+# Build and cache
+dist/
+build/
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
