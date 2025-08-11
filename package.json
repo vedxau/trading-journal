@@ -4,17 +4,17 @@
   "description": "A comprehensive, modern trading journal web application for logging and analyzing trades across Forex, metals, crypto, and commodities markets.",
   "main": "src/server.js",
 
-  "scripts": {
-    "server": "nodemon index.js",
-    "client": "cd client && npm start",
-    "build": "cd client && npm ci && npm run build",
-    "install-all": "npm install && cd client && npm install",
-    "start": "start": "node src/server.js",
-    "render-build": "npm run install-all && npm run build",
-    "install-backend": "npm install",
-    "install-client": "cd client && npm install",
-    "build-client": "cd client && npm run build"
-  },
+"scripts": {
+  "server": "nodemon src/server.js",
+  "client": "cd client && npm start",
+  "build": "cd client && npm ci && npm run build",
+  "install-all": "npm install && cd client && npm install",
+  "start": "node src/server.js",
+  "render-build": "npm run install-all && npm run build",
+  "install-backend": "npm install",
+  "install-client": "cd client && npm install",
+  "build-client": "cd client && npm run build"
+},
   "keywords": [
     "trading",
     "journal",
