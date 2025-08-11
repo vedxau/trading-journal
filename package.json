@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "A comprehensive, modern trading journal web application for logging and analyzing trades across Forex, metals, crypto, and commodities markets.",
   "main": "src/server.js",
-
   "scripts": {
     "server": "nodemon index.js",
     "client": "cd client && npm start",
@@ -44,13 +43,17 @@
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
-    "express": "^5.1.0",
+    "express": "^4.21.2",
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.1",
     "multer": "^2.0.2",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "path-to-regexp": "^6.2.1"
+  },
+  "resolutions": {
+    "path-to-regexp": "^6.2.1",
+    "router/path-to-regexp": "^6.2.1"
   }
 }
-

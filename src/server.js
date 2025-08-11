@@ -10,9 +10,13 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'https://trading-journal-phi-three.vercel.app' // Add your Vercel frontend domain
+  ],
   credentials: true
 }));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -130,7 +134,6 @@ app.post('/api/trades', (req, res) => {
       return res.status(400).json({ error: 'Quantity and price must be positive numbers' });
     }
     
-    // For demo, just return success
     res.json({ success: true, message: 'Trade added successfully' });
   } catch (error) {
     console.error('Add trade error:', error);
@@ -146,7 +149,6 @@ app.delete('/api/trades/:id', (req, res) => {
       return res.status(400).json({ error: 'Invalid trade ID' });
     }
     
-    // For demo, just return success
     res.json({ success: true, message: 'Trade deleted successfully' });
   } catch (error) {
     console.error('Delete trade error:', error);
@@ -233,7 +235,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Error handling middleware (must be last)
+// Error handling middleware
 app.use(errorHandler);
 
 // Start server
