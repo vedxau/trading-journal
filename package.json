@@ -2,7 +2,8 @@
   "name": "trading-journal-app",
   "version": "1.0.0",
   "description": "A comprehensive, modern trading journal web application for logging and analyzing trades across Forex, metals, crypto, and commodities markets.",
-  "main": "index.js",
+  "main": "server.js",
+
   "scripts": {
     "server": "nodemon index.js",
     "client": "cd client && npm start",
