@@ -8,12 +8,12 @@ import {
   BarChart3,
   Activity,
   Plus,
-  Eye,
-  Calendar,
   Newspaper
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Dashboard = () => {
   const [overview, setOverview] = useState(null);
@@ -30,8 +30,8 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
       const [overviewRes, tradesRes] = await Promise.all([
-        axios.get('/api/analytics/overview'),
-        axios.get('/api/trades?limit=5')
+        axios.get(`${API_URL}/api/analytics/overview`),
+        axios.get(`${API_URL}/api/trades?limit=5`)
       ]);
 
       setOverview(overviewRes.data);
@@ -142,19 +142,16 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Your trading performance overview</p>
       </div>
 
-      {/* Debug info */}
       <div className="text-xs text-gray-500">
         Overview: {overview ? 'Loaded' : 'Not loaded'} | 
         Recent Trades: {recentTrades.length} items
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total P&L"
@@ -185,9 +182,7 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Recent Trades and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Trades */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -219,7 +214,6 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -259,3 +253,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
