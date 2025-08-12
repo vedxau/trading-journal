@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
@@ -12,7 +13,7 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
-    'https://trading-journal-phi-three.vercel.app' // Add your Vercel frontend domain
+    'https://trading-journal-phi-three.vercel.app'
   ],
   credentials: true
 }));
@@ -26,34 +27,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mock user data
-const mockUser = {
-  id: 1,
-  name: 'Demo User',
-  email: 'demo@example.com'
-};
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trading-journal', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
-const mockTrades = [
-  { id: 1, symbol: 'AAPL', date: '2023-06-01', setup: 'Setup A', dayType: 'All Days', quantity: 10, price: 150 },
-  { id: 2, symbol: 'GOOGL', date: '2023-06-02', setup: 'Setup B', dayType: 'All Days', quantity: 5, price: 2500 },
-];
-
-const mockAnalytics = {
-  overview: { totalTrades: 2, winRate: 50 },
-  setups: ['Setup A', 'Setup B'],
-  timeframes: ['Daily', 'Weekly'],
-  weekly: [],
-  monthly: [],
-  symbols: ['AAPL', 'GOOGL'],
-  drawdown: {},
-};
-
-const mockCalendar = {
-  events: [
-    { id: 1, title: 'Event 1', date: '2023-06-10' },
-    { id: 2, title: 'Event 2', date: '2023-06-15' },
-  ],
-};
+// Import models
+const User = require('../backend/models/User');
+const Trade = require('../backend/models/Trade');
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -83,16 +67,64 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // For demo, accept any email/password
-    const token = jwt.sign({ id: mockUser.id, email }, SECRET_KEY, { expiresIn: '1h' });
-    res.json({ token, user: mockUser });
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // For demo purposes, accept any password
+    // In production, use bcrypt to compare passwords
+    const token = jwt.sign({ id: user._id, email: user.email }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.nickname || user.username || user.email, 
+        email: user.email 
+      } 
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/auth/verify', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+    
+    // Create new user with required fields
+    const newUser = new User({ 
+      username: name || email.split('@')[0], // Use name or email prefix as username
+      email, 
+      password 
+    });
+    
+    await newUser.save();
+    
+    const token = jwt.sign({ id: newUser._id, email: newUser.email }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ 
+      token, 
+      user: { 
+        id: newUser._id, 
+        name: newUser.nickname || newUser.username || newUser.email, 
+        email: newUser.email 
+      } 
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/auth/verify', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -105,7 +137,18 @@ app.get('/api/auth/verify', (req, res) => {
     }
     
     const decoded = jwt.verify(token, SECRET_KEY);
-    res.json({ user: mockUser });
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    res.json({ 
+      user: { 
+        id: user._id, 
+        name: user.nickname || user.username || user.email, 
+        email: user.email 
+      } 
+    });
   } catch (err) {
     console.error('Token verification error:', err);
     res.status(401).json({ error: 'Invalid token' });
@@ -113,40 +156,87 @@ app.get('/api/auth/verify', (req, res) => {
 });
 
 // Trades endpoints
-app.get('/api/trades', (req, res) => {
+app.get('/api/trades', async (req, res) => {
   try {
-    res.json({ trades: mockTrades });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    const trades = await Trade.find({ user: decoded.id }).sort({ entryTime: -1 });
+    res.json({ trades });
   } catch (error) {
     console.error('Get trades error:', error);
     res.status(500).json({ error: 'Failed to fetch trades' });
   }
 });
 
-app.post('/api/trades', (req, res) => {
+app.post('/api/trades', async (req, res) => {
   try {
-    const { symbol, date, setup, dayType, quantity, price } = req.body;
-    
-    if (!symbol || !date || !setup || !dayType || !quantity || !price) {
-      return res.status(400).json({ error: 'All fields are required' });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
     }
     
-    if (quantity <= 0 || price <= 0) {
-      return res.status(400).json({ error: 'Quantity and price must be positive numbers' });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    const { symbol, setupName, dayType, entryTimeframe, direction, entryPrice, exitPrice, positionSize, stopLoss, takeProfit, pnl, pnlPercentage, riskRewardRatio, entryTime, exitTime, notes } = req.body;
+    
+    if (!symbol || !setupName || !dayType || !direction || !entryPrice || !exitPrice || !positionSize || !stopLoss || !takeProfit || !entryTime || !exitTime) {
+      return res.status(400).json({ error: 'All required fields must be provided' });
     }
     
-    res.json({ success: true, message: 'Trade added successfully' });
+    const newTrade = new Trade({
+      user: decoded.id,
+      symbol,
+      setupName,
+      dayType,
+      entryTimeframe: entryTimeframe || 'M15',
+      direction,
+      entryPrice,
+      exitPrice,
+      positionSize,
+      stopLoss,
+      takeProfit,
+      pnl: pnl || 0,
+      pnlPercentage: pnlPercentage || 0,
+      riskRewardRatio: riskRewardRatio || 1,
+      entryTime,
+      exitTime,
+      notes: notes || ''
+    });
+    
+    await newTrade.save();
+    res.json({ success: true, message: 'Trade added successfully', trade: newTrade });
   } catch (error) {
     console.error('Add trade error:', error);
     res.status(500).json({ error: 'Failed to add trade' });
   }
 });
 
-app.delete('/api/trades/:id', (req, res) => {
+app.delete('/api/trades/:id', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
     const { id } = req.params;
     
-    if (!id || isNaN(parseInt(id))) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid trade ID' });
+    }
+    
+    const trade = await Trade.findOneAndDelete({ _id: id, user: decoded.id });
+    if (!trade) {
+      return res.status(404).json({ error: 'Trade not found' });
     }
     
     res.json({ success: true, message: 'Trade deleted successfully' });
@@ -157,73 +247,86 @@ app.delete('/api/trades/:id', (req, res) => {
 });
 
 // Analytics endpoints
-app.get('/api/analytics/overview', (req, res) => {
+app.get('/api/analytics/overview', async (req, res) => {
   try {
-    res.json(mockAnalytics.overview);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    const trades = await Trade.find({ user: decoded.id });
+    
+    const totalTrades = trades.length;
+    const profitableTrades = trades.filter(trade => trade.pnl > 0).length;
+    const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
+    
+    res.json({ 
+      totalTrades, 
+      winRate: Math.round(winRate * 100) / 100,
+      totalPnl: trades.reduce((sum, trade) => sum + (trade.pnl || 0), 0)
+    });
   } catch (error) {
     console.error('Get analytics overview error:', error);
     res.status(500).json({ error: 'Failed to fetch analytics overview' });
   }
 });
 
-app.get('/api/analytics/setups', (req, res) => {
+app.get('/api/analytics/setups', async (req, res) => {
   try {
-    res.json(mockAnalytics.setups);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    const trades = await Trade.find({ user: decoded.id });
+    const setups = [...new Set(trades.map(trade => trade.setupName))].filter(Boolean);
+    
+    res.json(setups);
   } catch (error) {
     console.error('Get analytics setups error:', error);
     res.status(500).json({ error: 'Failed to fetch setups' });
   }
 });
 
-app.get('/api/analytics/timeframes', (req, res) => {
+app.get('/api/analytics/symbols', async (req, res) => {
   try {
-    res.json(mockAnalytics.timeframes);
-  } catch (error) {
-    console.error('Get analytics timeframes error:', error);
-    res.status(500).json({ error: 'Failed to fetch timeframes' });
-  }
-});
-
-app.get('/api/analytics/weekly', (req, res) => {
-  try {
-    res.json(mockAnalytics.weekly);
-  } catch (error) {
-    console.error('Get weekly analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch weekly analytics' });
-  }
-});
-
-app.get('/api/analytics/monthly', (req, res) => {
-  try {
-    res.json(mockAnalytics.monthly);
-  } catch (error) {
-    console.error('Get monthly analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch monthly analytics' });
-  }
-});
-
-app.get('/api/analytics/symbols', (req, res) => {
-  try {
-    res.json(mockAnalytics.symbols);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    const trades = await Trade.find({ user: decoded.id });
+    const symbols = [...new Set(trades.map(trade => trade.symbol))].filter(Boolean);
+    
+    res.json(symbols);
   } catch (error) {
     console.error('Get symbols error:', error);
     res.status(500).json({ error: 'Failed to fetch symbols' });
   }
 });
 
-app.get('/api/analytics/drawdown', (req, res) => {
-  try {
-    res.json(mockAnalytics.drawdown);
-  } catch (error) {
-    console.error('Get drawdown error:', error);
-    res.status(500).json({ error: 'Failed to fetch drawdown data' });
-  }
-});
-
 // Calendar endpoints
-app.get('/api/calendar', (req, res) => {
+app.get('/api/calendar', async (req, res) => {
   try {
-    res.json(mockCalendar);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    
+    // For now, return empty calendar events
+    res.json({ events: [] });
   } catch (error) {
     console.error('Get calendar error:', error);
     res.status(500).json({ error: 'Failed to fetch calendar' });
