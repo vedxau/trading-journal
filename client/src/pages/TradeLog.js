@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
+import axios from '../api/axios';
 import toast from 'react-hot-toast';
 import TradeModal from '../components/TradeModal';
 
